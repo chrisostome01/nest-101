@@ -1,23 +1,21 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { UserModule } from './user/user.module';
+import connectionSourceFactory from './config/data-source';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.POSTGRES_HOST,
-      port: parseInt(process.env.POSTGRES_PORT),
-      password: process.env.POSTGRES_PASSWORD,
-      username: process.env.POSTGRES_USER,
-      entities: [],
-      database: process.env.POSTGRES_DATABASE,
-      synchronize: false,
-      logging: true,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [connectionSourceFactory],
     }),
-    UserModule,
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) =>
+        configService.get('connectionSource'),
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
